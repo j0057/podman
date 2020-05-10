@@ -1,0 +1,25 @@
+#!/bin/sh
+
+bundle() {
+    cat "$@" \
+        | awk '/BEGIN CERT/,/END CERT/' \
+        | awk 'NR%2==1 {x=RT}
+               NR%2==0 {print x $0 RT | OPENSSL
+                        close(OPENSSL)}' \
+               RS='-+(BEGIN|END) CERTIFICATE-+' \
+               OPENSSL='openssl x509 -subject -issuer -dates -serial'
+}
+
+env
+
+domain="$(echo "$RENEWED_DOMAINS" | awk '{print $1}')"
+set -- $RENEWED_LINEAGE/cert.pem $RENEWED_LINEAGE/chain.pem _ /usr/share/ca-certificates/mozilla/DST_Root_CA_X3.crt
+
+bundle $1       > /srv/cert/$domain.1.crt # leaf
+bundle    $2    > /srv/cert/$domain.2.crt #        intermediate
+bundle $1 $2    > /srv/cert/$domain.3.crt # leaf + intermediate
+bundle       $4 > /srv/cert/$domain.4.crt #                       root
+bundle    $2 $4 > /srv/cert/$domain.6.crt #        intermediate + root
+bundle $1 $2 $4 > /srv/cert/$domain.7.crt # leaf + intermediate + root
+
+install -o root -g root -m 640 $RENEWED_LINEAGE/privkey.pem /srv/cert/$domain.key

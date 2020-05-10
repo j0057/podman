@@ -1,0 +1,28 @@
+#!/bin/sh
+
+case "$1" in
+
+init)
+    certbot certonly \
+        --manual \
+        --manual-public-ip-logging-ok \
+        --agree-tos \
+        --preferred-challenges dns \
+        --email $CERTBOT_EMAIL \
+        --no-eff-email \
+        --domains "$CERTBOT_DOMAINS" \
+        --deploy-hook /bin/bundles \
+        --logs-dir /etc/letsencrypt/log
+    ;;
+
+renew)
+    certbot renew \
+        --deploy-hook /bin/bundles \
+        --logs-dir /etc/letsencrypt/log
+    ;;
+
+*)
+    echo "unrecognized command $1" >&2
+    exit 1
+    ;;
+esac

@@ -1,0 +1,78 @@
+#!/bin/bash -e
+
+:() { echo -e "\e[1;36m[+] $@\e[0m" >&2; "$@"; }
+
+case $1 in
+    build)
+        ctr=$(: buildah from alpine:3.11)
+
+        : buildah run $ctr -- apk add certbot openssl ca-certificates
+        : buildah copy $ctr certbot.d/entrypoint /bin
+        : buildah copy $ctr certbot.d/bundles /bin
+
+        : buildah config \
+            --author 'Joost Molenaar <jjm@j0057.nl>' \
+            --entrypoint '["/bin/entrypoint"]' \
+            --cmd 'renew' \
+            $ctr
+
+        : buildah commit $ctr localhost/certbot:$(date +%y%m%d%H%M)
+        : buildah rm $ctr
+        ;;
+
+    init)
+        CERTBOT_NAME=${2?Missing name}
+        CERTBOT_DOMAINS=${3?Missing domain names}
+        CERTBOT_EMAIL=${4?Missing email address}
+
+        subuid=$(awk '$1=="certbot"{print $2}' FS=: /etc/subuid)
+
+        : install -o $subuid -g $subuid -m 700 -d /srv/certbot.$CERTBOT_NAME
+        : install -o $subuid -g $subuid -m 750 -d /srv/cert.$CERTBOT_NAME
+
+        : podman container run \
+            --log-driver journald \
+            --log-opt 'tag={{.ImageName}}' \
+            --env CERTBOT_DOMAINS=$CERTBOT_DOMAINS \
+            --env CERTBOT_EMAIL=$CERTBOT_EMAIL \
+            --subuidname certbot \
+            --subgidname certbot \
+            --volume /srv/certbot.$CERTBOT_NAME:/etc/letsencrypt \
+            --volume /srv/cert.$CERTBOT_NAME:/srv/cert \
+            --rm \
+            --interactive \
+            --tty \
+            $(podman image ls 2>/dev/null | awk '$1==N && $2>T {T=$2} END {print N ":" T}' N=localhost/certbot) \
+            init
+        ;;
+
+    create)
+        CERTBOT_NAME=${2?Missing name}
+        CERTBOT_DOMAINS=${3?Missing domain names}
+        CERTBOT_EMAIL=${4?Missing email address}
+
+        : podman container create \
+            --conmon-pidfile /run/podman/certbot-$CERTBOT_NAME.pid \
+            --log-driver journald \
+            --log-opt 'tag={{.ImageName}}' \
+            --name certbot-$CERTBOT_NAME \
+            --env CERTBOT_DOMAINS=$CERTBOT_DOMAINS \
+            --env CERTBOT_EMAIL=$CERTBOT_EMAIL \
+            --subuidname certbot \
+            --subgidname certbot \
+            --volume /srv/certbot.$CERTBOT_NAME:/etc/letsencrypt \
+            --volume /srv/cert.$CERTBOT_NAME:/srv/cert \
+            $(podman image ls 2>/dev/null | awk '$1==N && $2>T {T=$2} END {print N ":" T}' N=localhost/certbot)
+        ;;
+
+    destroy)
+        CERTBOT_NAME=${2?Missing name}
+
+        : podman rm certbot-$CERTBOT_NAME
+        ;;
+
+    *)
+        echo "unrecognized command $1" >&2
+        exit 1
+        ;;
+esac
