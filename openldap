@@ -59,7 +59,7 @@ case $1 in
         $0 create
         ;;
 
-    start|stop|enable|disable)
+    start|stop|enable|disable|is-enabled|is-active|status)
         : systemctl $1 podman@openldap.service
         ;;
 
