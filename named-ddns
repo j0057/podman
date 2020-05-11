@@ -1,0 +1,112 @@
+#!/bin/bash -eu
+# vim: set noet ts=8 sw=8 list:
+
+. conf/$HOSTNAME.env
+
+:() { echo -e "\e[1;36m[+] $@\e[0m" >&2; "$@"; }
+
+gen_named_conf() {
+	cat <<-EOF
+	include "/srv/named-ddns-key/podman-ddns.key";
+
+	options {
+	    listen-on-v6 { none; };
+	    pid-file "/var/run/named/named.pid";
+	    directory "/var/bind";
+	    allow-transfer { key podman-ddns; };
+	    allow-recursion { none; };
+	    recursion no;
+	    querylog yes;
+	    check-names master ignore;
+	};
+	EOF
+
+	for zone; do
+		cat <<-EOF
+
+		zone "$zone." {
+		    type master;
+		    notify yes;
+		    file "/var/bind/$zone.zone";
+		    allow-update { key podman-ddns; };
+		    check-names warn;
+		    serial-update-method unixtime;
+		};
+		EOF
+	done
+}
+
+gen_zone() {
+	cat <<-EOF
+	\$ORIGIN $1.
+	@	300 IN SOA	$1. root (1 28800 1800 604800 86400)
+	@	300 IN NS	$1.
+	@	300 IN A	127.0.0.1
+	EOF
+}
+
+case "$1" in
+	build)
+		ctr=$(: buildah from alpine:3.11)
+		trap ": buildah rm $ctr" EXIT
+
+		: buildah run $ctr -- apk add bind
+
+		: buildah run $ctr -- sh -c 'tee /etc/bind/named.conf' < <(gen_named_conf ${NAMED_PODMAN_ZONES[*]})
+		for zone in ${NAMED_PODMAN_ZONES[*]}; do
+			: buildah run $ctr -- sh -c "tee /var/bind/$zone.zone" < <(gen_zone $zone)
+		done
+
+		: buildah config \
+			--author 'Joost Molenaar <jjm@j0057.nl>' \
+			--port tcp/53 \
+			--port udp/53 \
+			--stop-signal TERM \
+			--entrypoint '/usr/sbin/named -u named -g 2>&1' \
+			$ctr
+
+		: buildah commit $ctr localhost/named-ddns:$(date +%y%m%d%H%M)
+		;;
+
+	init)
+		subuid=$(awk '$1=="named-ddns"{print $2}' FS=: /etc/subuid)
+		: install -o root -g root -m 700 -d /srv/named-ddns-key
+		: setfacl -m u:$[subuid+100]:rx,d:$[subuid+100]:r /srv/named-ddns-key
+		(umask 0077; : tsig-keygen -a hmac-sha256 podman-ddns > /srv/named-ddns-key/podman-ddns.key)
+		;;
+
+
+	run|create)
+		declare -A opt=([create]="--conmon-pidfile /run/podman/named-ddns.pid --log-driver journald --log-opt 'tag={{.ImageName}}'"
+				[run]='--rm --interactive --tty')
+		: podman container $1 \
+			${opt[$1]} \
+			--name named-ddns \
+			--net sys \
+			--ip $NAMED_PODMAN_IP \
+			--dns $DNS_SERVER \
+			--dns-search sys.$DNS_SEARCH \
+			--subuidname named-ddns \
+			--subgidname named-ddns \
+			--volume /srv/named-ddns-key:/srv/named-ddns-key \
+			$(podman image ls 2>/dev/null | awk '$1==N && $2>T {T=$2} END {print N ":" T}' N=localhost/named-ddns)
+		;;
+
+	destroy)
+		: podman container rm named-ddns
+		;;
+
+	recreate)
+		$0 destroy
+		$0 create
+		;;
+
+	enable|disable|start|stop)
+		: systemctl $1 podman@named-ddns.service
+		;;
+
+	*)
+		echo "error: unknown command \`$1\`" >&2
+		exit 1
+		;;
+esac
