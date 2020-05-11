@@ -1,0 +1,1 @@
+conf/*      filter=git-crypt-secrets    diff=git-crypt-secrets
