@@ -45,7 +45,7 @@ case "$1" in
         $0 create
         ;;
 
-    enable|disable|start|stop)
+    enable|disable|start|stop|is-enabled|is-active|status)
         : systemctl $1 podman@named-rec.service
         ;;
 
