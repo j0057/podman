@@ -1,10 +1,13 @@
 #!/bin/bash -eu
 
+. conf/$HOSTNAME.env
+
 :() { echo -e "\e[1;36m[+] $@\e[0m" >&2; "$@"; }
 
 case $1 in
     build)
         ctr=$(: buildah from 'alpine:3.11')
+        trap ": buildah rm $ctr" EXIT
 
         : buildah run $ctr -- apk add socat openldap openldap-clients openldap-back-mdb
         : buildah run $ctr -- install -o ldap -g ldap -m 700 -d /run/openldap
@@ -16,7 +19,7 @@ case $1 in
         : buildah copy $ctr openldap.d/data.ldif /tmp
 
         : buildah run $ctr -- sh -c 'slapd -u ldap -g ldap -f /etc/openldap/slapd.conf \
-            && ldapadd -x -D cn=root,dc=pk28,dc=nl -w root -f /tmp/data.ldif \
+            && ldapadd -x -D cn=root,dc=gs45,dc=net -w root -f /tmp/data.ldif \
             && rm /tmp/data.ldif \
             && pkill -TERM slapd'
 
@@ -32,7 +35,6 @@ case $1 in
             $ctr
 
         : buildah commit $ctr openldap:$(date +%y%m%d%H%M)
-        : buildah rm $ctr
         ;;
 
     run|create)
@@ -40,10 +42,10 @@ case $1 in
                         [run]='--rm --interactive --tty')
         : podman container $1 \
             ${opt[$1]} \
-            --net sysnet \
-            --ip 172.28.19.8 \
-            --dns 172.23.2.1 \
-            --dns-search sysnet.podman.gs45.net. \
+            --net sys \
+            --ip $OPENLDAP_IP \
+            --dns $DNS_SERVER \
+            --dns-search sys.$DNS_SEARCH \
             --name openldap \
             --subuidname openldap \
             --subgidname openldap \
