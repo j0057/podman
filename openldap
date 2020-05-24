@@ -50,7 +50,7 @@ case $1 in
             --subuidname openldap \
             --subgidname openldap \
             $(podman image ls 2>/dev/null | awk '$1==N && $2>T {T=$2} END {print N ":" T}' N=localhost/openldap)
-            ;;
+        ;;
 
     destroy)
         : podman container rm openldap
