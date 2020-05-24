@@ -1,0 +1,68 @@
+#!/bin/bash -e
+# vim: set list:
+
+. conf/$HOSTNAME.env
+
+:() { echo -e "\e[1;36m[+] $@\e[0m" >&2; "$@"; }
+
+case "$1" in
+    build)
+        ctr=$(: buildah from alpine:3.11)
+        trap ": buildah rm $ctr" EXIT
+
+        : buildah run $ctr -- apk add wireguard-tools iptables ip6tables
+        : buildah run $ctr -- patch /usr/bin/wg-quick <<EOF
+--- /tmp/wg-quick.orig
++++ /tmp/wg-quick
+@@ -234,3 +234,3 @@
+ 	printf -v nftcmd '%sadd rule %s %s premangle meta l4proto udp meta mark set ct mark \\n' "\$nftcmd" "\$pf" "\$nftable"
+-	[[ \$proto == -4 ]] && cmd sysctl -q net.ipv4.conf.all.src_valid_mark=1
++	[[ \$proto == -4 ]] && [[ \$(sysctl -n net.ipv4.conf.all.src_valid_mark) != 1 ]] && cmd sysctl -q net.ipv4.conf.all.src_valid_mark=1
+ 	if type -p nft >/dev/null; then
+EOF
+
+        : buildah copy $ctr wireguard.d/vpn.conf /etc/wireguard
+        : buildah copy $ctr wireguard.d/entrypoint /bin
+
+        : buildah config \
+            --author 'Joost Molenaar <jjm@j0057.nl>' \
+            --entrypoint '/bin/entrypoint' \
+            --stop-signal TERM \
+            $ctr
+
+        : buildah commit $ctr wireguard:$(date +%y%m%d%H%M)
+        ;;
+
+    run|create)
+        declare -A opt=([create]="--conmon-pidfile /run/podman/wireguard.pid --log-driver journald --log-opt 'tag={{.ImageName}}'"
+                        [run]='--rm --interactive --tty')
+        : podman container $1 \
+            ${opt[$1]} \
+            --net vpn \
+            --ip $WIREGUARD_IP \
+            --dns none \
+            --name wireguard \
+            --cap-add NET_ADMIN \
+            --subuidname wireguard \
+            --subgidname wireguard \
+            $(podman image ls 2>/dev/null | awk '$1==N && $2>T {T=$2} END {print N ":" T}' N=localhost/wireguard)
+        ;;
+
+    destroy)
+        : podman container rm wireguard
+        ;;
+
+    recreate)
+        $0 destroy
+        $0 create
+        ;;
+
+    start|stop|enable|disable|is-enabled|is-active|status)
+        : systemctl $1 podman@wireguard.service
+        ;;
+
+    *)
+        echo "unknown command $1" >&2
+        exit 1
+        ;;
+esac

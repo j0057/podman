@@ -1,2 +1,3 @@
 conf/*                  filter=git-crypt-secrets    diff=git-crypt-secrets
 openldap.d/data.ldif    filter=git-crypt-secrets    diff=git-crypt-secrets
+wireguard.d/vpn.conf    filter=git-crypt-secrets    diff=git-crypt-secrets
