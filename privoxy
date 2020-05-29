@@ -1,0 +1,56 @@
+#!/bin/bash -e
+
+. conf/$HOSTNAME.env
+
+:() { echo -e "\e[1;36m[+] $@\e[0m" >&2; "$@"; }
+
+case $1 in
+    build)
+        ctr=$(: buildah from alpine:3.11)
+        trap ": buildah rm $ctr" EXIT
+
+        : buildah run $ctr -- apk add privoxy
+        : buildah run $ctr -- sed -e '/^listen-address / s/^.*$/listen-address :8118/' -i /etc/privoxy/config
+        : buildah copy $ctr privoxy.d/entrypoint /bin
+
+        : buildah config \
+            --author 'Joost Molenaar <jjm@j0057.nl>' \
+            --entrypoint '/bin/entrypoint' \
+            --port tcp/8118 \
+            --stop-signal TERM \
+            $ctr
+
+        : buildah commit $ctr privoxy:$(date +%y%m%d%H%M)
+        ;;
+
+    run|create)
+        declare -A opt=([create]="--conmon-pidfile /run/podman/privoxy.pid --log-driver journald --log-opt 'tag={{.ImageName}}'"
+                        [run]='--rm --interactive --tty')
+        : podman container $1 ${opt[$1]} \
+            --net vpn \
+            --ip $PRIVOXY_IP \
+            --name privoxy \
+            --dns $DNS_SERVER_VPN \
+            --subuidname privoxy \
+            --subgidname privoxy \
+            $(podman image ls 2>/dev/null | awk '$1==N && $2>T {T=$2} END {print N ":" T}' N=localhost/privoxy)
+        ;;
+
+    destroy)
+        : podman container rm privoxy
+        ;;
+
+    recreate)
+        $0 destroy
+        $0 create
+        ;;
+
+    start|stop|enable|disable|is-enabled|is-active|status)
+        : systemctl $1 podman@privoxy.service
+        ;;
+
+    *)
+        echo "unknown command $1" >&2
+        exit 1
+        ;;
+esac

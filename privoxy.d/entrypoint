@@ -1,0 +1,5 @@
+#!/bin/sh
+until ip route get 1.2.3.4 | grep -q 'dev vpn'; do
+    sleep 1
+done
+exec /usr/sbin/privoxy --no-daemon /etc/privoxy/config
