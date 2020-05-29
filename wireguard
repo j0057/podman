@@ -22,11 +22,10 @@ case "$1" in
 EOF
 
         : buildah copy $ctr wireguard.d/vpn.conf /etc/wireguard
-        : buildah copy $ctr wireguard.d/entrypoint /bin
 
         : buildah config \
             --author 'Joost Molenaar <jjm@j0057.nl>' \
-            --entrypoint '/bin/entrypoint' \
+            --entrypoint '/usr/bin/wg-quick up vpn' \
             --stop-signal TERM \
             $ctr
 

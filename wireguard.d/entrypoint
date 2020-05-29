@@ -1,4 +1,0 @@
-#!/bin/bash -x
-wg-quick up vpn
-iptables -t nat -A POSTROUTING -o vpn -j MASQUERADE
-sleep inf # ...actually finite: 10^11 years on 64-bit systems
