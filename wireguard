@@ -33,22 +33,21 @@ EOF
         ;;
 
     run|create)
-        declare -A opt=([create]="--conmon-pidfile /run/podman/wireguard.pid --log-driver journald --log-opt 'tag={{.ImageName}}'"
-                        [run]='--rm --interactive --tty')
+        [ -n "$2" ] && name="$2-wg" || name="wireguard"
+        [ -n "$2" ] && netns="--net container:$2" || netns="--net vpn --ip $WIREGUARD_IP --dns $DNS_SERVER_VPN"
+        [ -n "$2" ] && userns="--userns container:$2" || userns="--subuidname wireguard --subgidname wireguard"
+        declare -A opt=([create]="$netns $userns --conmon-pidfile /run/podman/$name.pid --log-driver journald --log-opt 'tag={{.ImageName}}'"
+                        [run]="$netns $userns --rm --interactive --tty")
         : podman container $1 \
             ${opt[$1]} \
-            --net vpn \
-            --ip $WIREGUARD_IP \
-            --dns none \
-            --name wireguard \
+            --name $name \
             --cap-add NET_ADMIN \
-            --subuidname wireguard \
-            --subgidname wireguard \
             $(podman image ls 2>/dev/null | awk '$1==N && $2>T {T=$2} END {print N ":" T}' N=localhost/wireguard)
         ;;
 
     destroy)
-        : podman container rm wireguard
+        [ -n "$2" ] && name="$2-wg" || name="wireguard"
+        : podman container rm $name
         ;;
 
     recreate)
@@ -57,7 +56,8 @@ EOF
         ;;
 
     start|stop|enable|disable|is-enabled|is-active|status)
-        : systemctl $1 podman@wireguard.service
+        [ -n "$2" ] && name="$2-wg" || name="wireguard"
+        : systemctl $1 podman@$name.service
         ;;
 
     *)
