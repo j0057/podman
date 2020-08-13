@@ -1,0 +1,46 @@
+#!/bin/bash -eu
+
+. conf/$HOSTNAME.env
+
+:() { echo -e "\e[1;36m[+] $@\e[0m" >&2; "$@"; }
+
+case "$1" in
+    build|pull)
+        : podman pull docker.io/library/elasticsearch:7.8.1
+        ;;
+
+    create|run)
+        declare -A opt=([create]="--conmon-pidfile /run/podman/elastic.pid --log-driver journald --log-opt 'tag={{.ImageName}}'"
+                        [run]='--rm --interactive --tty')
+        : podman container $1 \
+            ${opt[$1]} \
+            --net sys \
+            --ip $ELASTIC_IP \
+            --dns $DNS_SERVER \
+            --dns-search sys.$DNS_SEARCH \
+            --name elastic \
+            --subuidname elastic \
+            --subgidname elastic \
+            --env discovery.type=single-node \
+            $(podman image ls 2>/dev/null | awk '$1==N && $2>T {T=$2} END {print N ":" T}' N=docker.io/library/elasticsearch)
+        ;;
+
+    destroy)
+        : podman container rm elastic
+        ;;
+
+    recreate)
+        $0 destroy
+        $0 create
+        ;;
+
+    start|stop|enable|disable|is-enabled|is-active|status)
+        : systemctl $1 podman@elastic.service
+        ;;
+
+    *)
+        echo "unknown command $1" >&2
+        exit 1
+        ;;
+
+esac
