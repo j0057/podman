@@ -25,7 +25,8 @@ EOF
 
         : buildah config \
             --author 'Joost Molenaar <jjm@j0057.nl>' \
-            --entrypoint '/usr/bin/wg-quick up vpn' \
+            --entrypoint '["/usr/bin/wg-quick"]' \
+            --cmd 'up vpn' \
             --stop-signal TERM \
             $ctr
 
@@ -34,8 +35,10 @@ EOF
 
     run|create)
         [ -n "$2" ] && name="$2-wg" || name="wireguard"
-        [ -n "$2" ] && netns="--net container:$2" || netns="--net vpn --ip $WIREGUARD_IP --dns $DNS_SERVER_VPN"
-        [ -n "$2" ] && userns="--userns container:$2" || userns="--subuidname wireguard --subgidname wireguard"
+        [ -n "$2" ] && netns="--net container:$2"  \
+                    || netns="--net vpn --ip $WIREGUARD_IP --dns $DNS_SERVER_VPN"
+        [ -n "$2" ] && userns="--userns container:$2" \
+                    || userns="--subuidname wireguard --subgidname wireguard"
         declare -A opt=([create]="$netns $userns --conmon-pidfile /run/podman/$name.pid --log-driver journald --log-opt 'tag={{.ImageName}}'"
                         [run]="$netns $userns --rm --interactive --tty")
         : podman container $1 \
