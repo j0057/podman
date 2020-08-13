@@ -1,0 +1,74 @@
+#!/bin/bash -eu
+
+MINECRAFT_VERSION=1.16.2
+MINECRAFT_SERVER_URL=https://launcher.mojang.com/v1/objects/c5f6fb23c3876461d46ec380421e42b289789530/server.jar
+
+. conf/$HOSTNAME.env
+
+:() { echo -e "\e[1;36m[+] $@\e[0m" >&2; "$@"; }
+
+case $1 in
+    build)
+		#subuid=$(awk '$1=="minecraft"{print $2}' FS=: /etc/subuid)
+        #   --user $[subuid+999]:$[subuid+999] \
+
+        ctr=$(: buildah from 'alpine:3.12')
+        trap ": buildah rm $ctr" EXIT
+
+        : buildah run $ctr -- apk add openjdk11-jre-headless
+        : buildah copy $ctr $MINECRAFT_SERVER_URL /opt
+        # buildah run $ctr sh -c 'cat >/srv/eula.txt' <<<'eula=true'
+
+        : buildah config \
+            --author 'Joost Molenaar <jjm@j0057.nl>' \
+            --entrypoint '/usr/bin/java -Xmx1024M -Xms1024M -jar /opt/server.jar --nogui' \
+            --workingdir '/srv' \
+            $ctr
+
+        : buildah commit $ctr minecraft:$(date +%y%m%d%H%M)-$MINECRAFT_VERSION
+        ;;
+
+    init)
+		subuid=$(awk '$1=="minecraft"{print $2}' FS=: /etc/subuid)
+        : install -o $[subuid+0] -g $[subuid+0] -m 700 -d /srv/minecraft
+        : tee /srv/minecraft/eula.txt <<<'eula=true'
+        ;;
+
+    run|create)
+        declare -A opt=([create]="--conmon-pidfile /run/podman/minecraft.pid --log-driver journald --log-opt 'tag={{.ImageName}}'"
+                        [run]='--rm --interactive --tty')
+        : podman container $1 \
+            ${opt[$1]} \
+            --net sys \
+            --ip $MINECRAFT_IP \
+            --dns $DNS_SERVER \
+            --dns-search sys.$DNS_SEARCH \
+            --name minecraft \
+            --subuidname minecraft \
+            --subgidname minecraft \
+            --volume /srv/minecraft:/srv \
+            $(podman image ls 2>/dev/null | awk '$1==N && $2>T {T=$2} END {print N ":" T}' N=localhost/minecraft)
+        ;;
+
+    destroy)
+        : podman container rm minecraft
+        ;;
+
+    recreate)
+        $0 destroy || true
+        $0 create
+        ;;
+
+    start|stop|enable|disable|is-enabled|is-active|status)
+        : systemctl $1 podman@minecraft.service
+        ;;
+
+    attach)
+        : podman attach minecraft
+        ;;
+
+    *)
+        echo "error: unrecognized command '$1'" >&2
+        exit 1
+        ;;
+esac
