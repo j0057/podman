@@ -3,7 +3,7 @@
 . conf/$HOSTNAME.env
 
 CONTAINER_NAME=named-rec
-CONTAINER_IMAGE=localhost/named-rec
+CONTAINER_IMAGE=j0057.azurecr.io/named-rec
 CONTAINER_ARGS=(--net sys
                 --ip $NAMED_REC_IP
                 --dns $DNS_SERVER
@@ -12,7 +12,7 @@ CONTAINER_ARGS=(--net sys
                 --subgidname named-rec)
 
 cmd_build() {
-    ctr=$(: buildah from alpine:3.11)
+    ctr=$(: buildah from j0057.azurecr.io/alpine:3.12)
     trap ": buildah rm $ctr" EXIT
     : buildah run $ctr -- apk add bind
     : buildah copy $ctr named.d/named-rec.conf /etc/bind/named.conf
@@ -23,7 +23,8 @@ cmd_build() {
         --stop-signal TERM \
         --entrypoint '/usr/sbin/named -4 -u named -g 2>&1' \
         $ctr
-    : buildah commit $ctr localhost/named-rec:$(date +%y%m%d%H%M)
+    : buildah commit $ctr $CONTAINER_IMAGE:$TAG
+    : buildah push $ctr $CONTAINER_IMAGE:$TAG
 }
 
 . functions.sh
