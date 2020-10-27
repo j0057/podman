@@ -4,7 +4,7 @@
 . conf/$HOSTNAME.env
 
 CONTAINER_NAME=named-ddns
-CONTAINER_IMAGE=localhost/named-ddns
+CONTAINER_IMAGE=j0057.azurecr.io/named-ddns
 CONTAINER_ARGS=(--net sys
 		--ip $NAMED_PODMAN_IP
 		--dns $DNS_SERVER
@@ -54,7 +54,7 @@ gen_zone() {
 }
 
 cmd_build() {
-	ctr=$(: buildah from alpine:3.11)
+	ctr=$(: buildah from j0057.azurecr.io/alpine:3.12)
 	trap ": buildah rm $ctr" EXIT
 
 	: buildah run $ctr -- apk add bind
@@ -72,7 +72,8 @@ cmd_build() {
 		--entrypoint '/usr/sbin/named -u named -g 2>&1' \
 		$ctr
 
-	: buildah commit $ctr localhost/named-ddns:$(date +%y%m%d%H%M)
+	: buildah commit $ctr $CONTAINER_IMAGE:$TAG
+	: buildah push $CONTAINER_IMAGE:$TAG
 }
 
 cmd_init() {
