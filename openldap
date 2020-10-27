@@ -3,7 +3,7 @@
 . conf/$HOSTNAME.env
 
 CONTAINER_NAME=openldap
-CONTAINER_IMAGE=localhost/openldap
+CONTAINER_IMAGE=j0057.azurecr.io/openldap
 CONTAINER_ARGS=(--net sys
                 --ip $OPENLDAP_IP
                 --dns $DNS_SERVER
@@ -12,7 +12,7 @@ CONTAINER_ARGS=(--net sys
                 --subgidname openldap)
 
 cmd_build() {
-    ctr=$(: buildah from 'alpine:3.11')
+    ctr=$(: buildah from j0057.azurecr.io/alpine:3.12)
     trap ": buildah rm $ctr" EXIT
 
     : buildah run $ctr -- apk add socat openldap openldap-clients openldap-back-mdb
@@ -42,7 +42,8 @@ cmd_build() {
         --stop-signal TERM \
         $ctr
 
-    : buildah commit $ctr openldap:$(date +%y%m%d%H%M)
+    : buildah commit $ctr $CONTAINER_IMAGE:$TAG
+    : buildah push $CONTAINER_IMAGE:$TAG
 }
 
 . $(dirname $0)/functions.sh
