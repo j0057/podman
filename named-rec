@@ -2,55 +2,28 @@
 
 . conf/$HOSTNAME.env
 
-:() { echo -e "\e[1;36m[+] $@\e[0m" >&2; "$@"; }
+CONTAINER_NAME=named-rec
+CONTAINER_IMAGE=localhost/named-rec
+CONTAINER_ARGS=(--net sys
+                --ip $NAMED_REC_IP
+                --dns $DNS_SERVER
+                --dns-search sys.$DNS_SEARCH
+                --subuidname named-rec
+                --subgidname named-rec)
 
-case "$1" in
-    build)
-        ctr=$(: buildah from alpine:3.11)
-        trap ": buildah rm $ctr" EXIT
-        : buildah run $ctr -- apk add bind
-        : buildah copy $ctr named.d/named-rec.conf /etc/bind/named.conf
-        : buildah config \
-            --author 'Joost Molenaar <jjm@j0057.nl>' \
-            --port tcp/53 \
-            --port udp/53 \
-            --stop-signal TERM \
-            --entrypoint '/usr/sbin/named -4 -u named -g 2>&1' \
-            $ctr
-        : buildah commit $ctr localhost/named-rec:$(date +%y%m%d%H%M)
-        ;;
+cmd_build() {
+    ctr=$(: buildah from alpine:3.11)
+    trap ": buildah rm $ctr" EXIT
+    : buildah run $ctr -- apk add bind
+    : buildah copy $ctr named.d/named-rec.conf /etc/bind/named.conf
+    : buildah config \
+        --author 'Joost Molenaar <jjm@j0057.nl>' \
+        --port tcp/53 \
+        --port udp/53 \
+        --stop-signal TERM \
+        --entrypoint '/usr/sbin/named -4 -u named -g 2>&1' \
+        $ctr
+    : buildah commit $ctr localhost/named-rec:$(date +%y%m%d%H%M)
+}
 
-    run|create)
-        declare -A opt=([create]="--conmon-pidfile /run/podman/named-rec.pid --log-driver journald --log-opt 'tag={{.ImageName}}'"
-                        [run]='--rm --interactive --tty')
-        # FIXME: for some reason, CNI bridge/host-local do not respect the resolvConf setting, this would be better than having to set --dns/--dns-search
-        : podman container $1 \
-            ${opt[$1]} \
-            --name named-rec \
-            --net sys \
-            --ip $NAMED_REC_IP \
-            --dns $DNS_SERVER \
-            --dns-search sys.$DNS_SEARCH \
-            --subuidname named-rec \
-            --subgidname named-rec \
-            $(podman image ls 2>/dev/null | awk '$1==N && $2>T {T=$2} END {print N ":" T}' N=localhost/named-rec)
-        ;;
-
-    destroy)
-        : podman container rm named-rec
-        ;;
-
-    recreate)
-        $0 destroy
-        $0 create
-        ;;
-
-    enable|disable|start|stop|is-enabled|is-active|status)
-        : systemctl $1 podman@named-rec.service
-        ;;
-
-    *)
-        echo "error: unknown command '$1'" >&2
-        exit 1
-        ;;
-esac
+. functions.sh
