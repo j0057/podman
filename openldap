@@ -2,71 +2,47 @@
 
 . conf/$HOSTNAME.env
 
-:() { echo -e "\e[1;36m[+] $@\e[0m" >&2; "$@"; }
+CONTAINER_NAME=openldap
+CONTAINER_IMAGE=localhost/openldap
+CONTAINER_ARGS=(--net sys
+                --ip $OPENLDAP_IP
+                --dns $DNS_SERVER
+                --dns-search sys.$DNS_SEARCH
+                --subuidname openldap
+                --subgidname openldap)
 
-case $1 in
-    build)
-        ctr=$(: buildah from 'alpine:3.11')
-        trap ": buildah rm $ctr" EXIT
+cmd_build() {
+    ctr=$(: buildah from 'alpine:3.11')
+    trap ": buildah rm $ctr" EXIT
 
-        : buildah run $ctr -- apk add socat openldap openldap-clients openldap-back-mdb
-        : buildah run $ctr -- install -o ldap -g ldap -m 700 -d /run/openldap
-        : buildah run $ctr -- cp /var/lib/openldap/openldap-data/DB_CONFIG.example /var/lib/openldap/openldap-data/DB_CONFIG
+    : buildah run $ctr -- apk add socat openldap openldap-clients openldap-back-mdb
+    : buildah run $ctr -- apk add iproute2
+    : buildah run $ctr -- install -o ldap -g ldap -m 700 -d /run/openldap
+    : buildah run $ctr -- cp /var/lib/openldap/openldap-data/DB_CONFIG.example /var/lib/openldap/openldap-data/DB_CONFIG
 
-        : buildah copy $ctr openldap.d/slapd.conf /etc/openldap
-        : buildah copy $ctr openldap.d/ldap.conf /etc/openldap
+    : buildah copy $ctr openldap.d/slapd.conf /etc/openldap
+    : buildah copy $ctr openldap.d/ldap.conf /etc/openldap
 
-        : buildah copy $ctr openldap.d/data.ldif /tmp
+    : buildah copy $ctr openldap.d/data.ldif /tmp
 
-        : buildah run $ctr -- sh -c 'slapd -u ldap -g ldap -f /etc/openldap/slapd.conf \
-            && ldapadd -x -D cn=root,dc=gs45,dc=net -w root -f /tmp/data.ldif \
-            && rm /tmp/data.ldif \
-            && pkill -TERM slapd'
+    : buildah run $ctr -- sh -c 'socat -u unix-recv:/dev/log stdout \
+        &  slapd -u ldap -g ldap -f /etc/openldap/slapd.conf \
+        && ldapadd -x -D cn=root,dc=gs45,dc=net -w root -f /tmp/data.ldif \
+        && rm /tmp/data.ldif \
+        && pkill -TERM socat \
+        && pkill -TERM slapd'
 
-        # XXX: openldap sadly still logs to syslog (/dev/log), so have to do some ugly trickery to get the logs onto stdout
-        # FIXME: should really do this using PODS instead of PUNT-IT-TO-THE-BACKGROUND-AND-HOPE-FOR-THE-BEST
-        # FIXME: seems that debug output is buffered inside either `socat` or `cut`, instead of being line buffered
-        : buildah config \
-            --author 'Joost Molenaar <jjm@j0057.nl>' \
-            --entrypoint 'socat -u unix-recv:/dev/log stdout | cut -d \> -f 2- & \
-                          exec slapd -u ldap -g ldap -f /etc/openldap/slapd.conf -d 0x100 &> /dev/null' \
-            --port tcp/389 \
-            --stop-signal TERM \
-            $ctr
+    # XXX: openldap sadly still logs to syslog (/dev/log), so have to do some ugly trickery to get the logs onto stdout
+    # FIXME: should really do this using PODS instead of PUNT-IT-TO-THE-BACKGROUND-AND-HOPE-FOR-THE-BEST
+    : buildah config \
+        --author 'Joost Molenaar <jjm@j0057.nl>' \
+        --entrypoint 'socat -u unix-recv:/dev/log stdout & \
+                      exec slapd -u ldap -g ldap -f /etc/openldap/slapd.conf -d 0x100 &> /dev/null' \
+        --port tcp/389 \
+        --stop-signal TERM \
+        $ctr
 
-        : buildah commit $ctr openldap:$(date +%y%m%d%H%M)
-        ;;
+    : buildah commit $ctr openldap:$(date +%y%m%d%H%M)
+}
 
-    run|create)
-        declare -A opt=([create]="--conmon-pidfile /run/podman/openldap.pid --log-driver journald --log-opt 'tag={{.ImageName}}'"
-                        [run]='--rm --interactive --tty')
-        : podman container $1 \
-            ${opt[$1]} \
-            --net sys \
-            --ip $OPENLDAP_IP \
-            --dns $DNS_SERVER \
-            --dns-search sys.$DNS_SEARCH \
-            --name openldap \
-            --subuidname openldap \
-            --subgidname openldap \
-            $(podman image ls 2>/dev/null | awk '$1==N && $2>T {T=$2} END {print N ":" T}' N=localhost/openldap)
-        ;;
-
-    destroy)
-        : podman container rm openldap
-        ;;
-
-    recreate)
-        $0 destroy || true
-        $0 create
-        ;;
-
-    start|stop|enable|disable|is-enabled|is-active|status)
-        : systemctl $1 podman@openldap.service
-        ;;
-
-    *)
-        echo "unknown command $1" >&2
-        exit 1
-        ;;
-esac
+. $(dirname $0)/functions.sh
