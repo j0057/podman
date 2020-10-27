@@ -1,0 +1,28 @@
+#!/bin/bash -eu
+
+. conf/$HOSTNAME.env
+
+CONTAINER_NAME=transmission
+CONTAINER_IMAGE=localhost/transmission
+CONTAINER_ARGS=(--net vpn
+                --ip $TRANSMISSION_IP
+                --dns $DNS_SERVER
+                --dns-search vpn.$DNS_SEARCH
+                --subuidname transmission
+                --subgidname transmission)
+
+cmd_build() {
+    ctr=$(: buildah from alpine:3.12)
+    trap ": buildah rm $ctr" EXIT
+
+    : buildah run $ctr -- apk add transmission-daemon
+    : buildah config \
+        --author 'Joost Molenaar <jjm@j0057.nl>' \
+        --entrypoint '/usr/bin/transmission-daemon --foreground --auth --username hoi --password hoi --allowed 172.23.*.*,172.28.*.*' \
+        --stop-signal TERM \
+        $ctr
+
+    : buildah commit $ctr transmission:$(date +%y%m%d%H%M)
+}
+
+. functions.sh
