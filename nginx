@@ -1,0 +1,30 @@
+#!/bin/bash -eu
+
+. conf/$HOSTNAME.env
+
+CONTAINER_NAME=nginx
+CONTAINER_IMAGE=j0057.azurecr.io/nginx
+CONTAINER_ARGS=(--net web
+                --ip $NGINX_IP
+                --dns $DNS_SERVER
+                --dns-search web.$DNS_SEARCH
+                --subuidname nginx
+                --subgidname nginx)
+
+cmd_build() {
+    ctr=$(: buildah from 'j0057.azurecr.io/alpine:3.12')
+    trap ": buildah rm $ctr" EXIT
+
+    : buildah run $ctr -- apk add nginx
+    : buildah copy $ctr nginx.d/nginx.conf /etc/nginx/nginx.conf;
+
+    : buildah config \
+        --author 'Joost Molenaar <jjm@j0057.nl>' \
+        --entrypoint '/usr/sbin/nginx' \
+        $ctr
+
+    : buildah commit $ctr $CONTAINER_IMAGE:$TAG
+    : buildah push $CONTAINER_IMAGE:$TAG
+}
+
+. functions.sh
