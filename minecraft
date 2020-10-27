@@ -6,7 +6,7 @@ MINECRAFT_SERVER_URL=https://launcher.mojang.com/v1/objects/c5f6fb23c3876461d46e
 . conf/$HOSTNAME.env
 
 CONTAINER_NAME=minecraft
-CONTAINER_IMAGE=localhost/minecraft
+CONTAINER_IMAGE=j0057.azurecr.io/minecraft
 CONTAINER_ARGS=(--net sys
                 --ip $MINECRAFT_IP
                 --dns $DNS_SERVER
@@ -16,7 +16,7 @@ CONTAINER_ARGS=(--net sys
                 --volume /srv/minecraft:/srv)
 
 cmd_build() {
-    ctr=$(: buildah from 'alpine:3.12')
+    ctr=$(: buildah from j0057.azurecr.io/alpine:3.12)
     trap ": buildah rm $ctr" EXIT
 
     : buildah run $ctr -- apk add openjdk11-jre-headless
@@ -28,7 +28,8 @@ cmd_build() {
         --workingdir '/srv' \
         $ctr
 
-    : buildah commit $ctr minecraft:$(date +%y%m%d%H%M)-$MINECRAFT_VERSION
+    : buildah commit $ctr $CONTAINER_IMAGE:$TAG-$MINECRAFT_VERSION
+    : buildah push $CONTAINER_IMAGE:$TAG-$MINECRAFT_VERSION
 }
 
 cmd_init() {
