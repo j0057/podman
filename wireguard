@@ -1,17 +1,31 @@
-#!/bin/bash -e
+#!/bin/bash -eu
 # vim: set list:
 
 . conf/$HOSTNAME.env
 
-:() { echo -e "\e[1;36m[+] $@\e[0m" >&2; "$@"; }
+if [ -z "${2:-}" ]; then
+    CONTAINER_NAME=wireguard
+    CONTAINER_ARGS=(--net vpn
+                    --ip $WIREGUARD_IP
+                    --dns $DNS_SERVER_VPN
+                    --subuidname wireguard
+                    --subgidname wireguard
+                    --cap-add NET_ADMIN)
+else
+    CONTAINER_NAME=$2-wg
+    CONTAINER_ARGS=(--net container:$2
+                    --userns container:$2
+                    --cap-add NET_ADMIN)
+fi
 
-case "$1" in
-    build)
-        ctr=$(: buildah from alpine:3.11)
-        trap ": buildah rm $ctr" EXIT
+CONTAINER_IMAGE=localhost/wireguard
 
-        : buildah run $ctr -- apk add wireguard-tools iptables ip6tables
-        : buildah run $ctr -- patch /usr/bin/wg-quick <<EOF
+cmd_build() {
+    ctr=$(: buildah from alpine:3.11)
+    trap ": buildah rm $ctr" EXIT
+
+    : buildah run $ctr -- apk add wireguard-tools iptables ip6tables
+    : buildah run $ctr -- patch /usr/bin/wg-quick <<EOF
 --- /tmp/wg-quick.orig
 +++ /tmp/wg-quick
 @@ -234,3 +234,3 @@
@@ -21,50 +35,16 @@ case "$1" in
  	if type -p nft >/dev/null; then
 EOF
 
-        : buildah copy $ctr wireguard.d/vpn.conf /etc/wireguard
+    : buildah copy $ctr wireguard.d/vpn.conf /etc/wireguard
 
-        : buildah config \
-            --author 'Joost Molenaar <jjm@j0057.nl>' \
-            --entrypoint '["/usr/bin/wg-quick"]' \
-            --cmd 'up vpn' \
-            --stop-signal TERM \
-            $ctr
+    : buildah config \
+        --author 'Joost Molenaar <jjm@j0057.nl>' \
+        --cmd '/usr/bin/wg-quick up vpn'
+        --stop-signal TERM \
+        $ctr
+        #--entrypoint '["/usr/bin/wg-quick"]' \
+        #--cmd 'up vpn' \
+    : buildah commit $ctr wireguard:$(date +%y%m%d%H%M)
+}
 
-        : buildah commit $ctr wireguard:$(date +%y%m%d%H%M)
-        ;;
-
-    run|create)
-        [ -n "$2" ] && name="$2-wg" || name="wireguard"
-        [ -n "$2" ] && netns="--net container:$2"  \
-                    || netns="--net vpn --ip $WIREGUARD_IP --dns $DNS_SERVER_VPN"
-        [ -n "$2" ] && userns="--userns container:$2" \
-                    || userns="--subuidname wireguard --subgidname wireguard"
-        declare -A opt=([create]="$netns $userns --conmon-pidfile /run/podman/$name.pid --log-driver journald --log-opt 'tag={{.ImageName}}'"
-                        [run]="$netns $userns --rm --interactive --tty")
-        : podman container $1 \
-            ${opt[$1]} \
-            --name $name \
-            --cap-add NET_ADMIN \
-            $(podman image ls 2>/dev/null | awk '$1==N && $2>T {T=$2} END {print N ":" T}' N=localhost/wireguard)
-        ;;
-
-    destroy)
-        [ -n "$2" ] && name="$2-wg" || name="wireguard"
-        : podman container rm $name
-        ;;
-
-    recreate)
-        $0 destroy
-        $0 create
-        ;;
-
-    start|stop|enable|disable|is-enabled|is-active|status)
-        [ -n "$2" ] && name="$2-wg" || name="wireguard"
-        : systemctl $1 podman@$name.service
-        ;;
-
-    *)
-        echo "unknown command $1" >&2
-        exit 1
-        ;;
-esac
+. functions.sh
