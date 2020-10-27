@@ -24,7 +24,7 @@ cmd_build() {
         --entrypoint '/usr/sbin/named -4 -u named -g 2>&1' \
         $ctr
     : buildah commit $ctr $CONTAINER_IMAGE:$TAG
-    : buildah push $ctr $CONTAINER_IMAGE:$TAG
+    : buildah push $CONTAINER_IMAGE:$TAG
 }
 
 . functions.sh
