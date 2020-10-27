@@ -1,49 +1,26 @@
 #!/bin/bash -eu
 
-:() { echo -e "\e[1;36m[+] $@\e[0m" >&2; "$@"; }
+. conf/$HOSTNAME.env
 
-case "$1" in
-    build|pull)
+CONTAINER_NAME=unifi
+CONTAINER_IMAGE=docker.io/linuxserver/unifi-controller
+CONTAINER_ARGS=(--net mgmt \
+                --dns $DNS_SERVER \
+                --dns-search mgmt.$DNS_SEARCH \
+                --ip $UNIFI_IP \
+                --subuidname unifi \
+                --subgidname unifi \
+                --volume /srv/unifi:/config \
+                --env PUID=999 \
+                --env PGID=999)
+
+cmd_pull() {
         : podman pull docker://docker.io/linuxserver/unifi-controller:5.12.66-ls56
-        ;;
+}
 
-    init)
+cmd_init() {
         subuid=$(awk '$1=="unifi"{print $2}' FS=: /etc/subuid)
         : install -o $[subuid+999] -g $[subuid+999] -m 700 -d /srv/unifi
-        ;;
+}
 
-    run|create)
-        declare -A opt=([create]="--conmon-pidfile /run/podman/unifi.pid --log-driver journald --log-opt 'tag={{.ImageName}}'"
-                        [run]='--rm --interactive --tty')
-        : podman container $1 ${opt[$1]} \
-            --name unifi \
-            --net mgmt \
-            --dns $DNS_SERVER \
-            --dns-search mgmt.$DNS_SEARCH \
-            --ip $UNIFI_IP \
-            --subuidname unifi \
-            --subgidname unifi \
-            --volume /srv/unifi:/config \
-            --env PUID=999 \
-            --env PGID=999 \
-            $(podman image ls 2>/dev/null | awk '$1==N && $2>T {T=$2} END {print N ":" T}' N=docker.io/linuxserver/unifi-controller)
-        ;;
-
-    destroy)
-        : podman container rm unifi
-        ;;
-
-    recreate)
-        $0 destroy
-        $0 create
-        ;;
-
-    start|stop|enable|disable|is-enabled|is-active|status)
-        : systemctl $1 podman@unifi.service
-        ;;
-
-    *)
-        echo "error: unknown command '$1'" >&2
-        exit 1
-        ;;
-esac
+. $(dirname $0)/functions.sh
