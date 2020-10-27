@@ -1,0 +1,27 @@
+#!/bin/bash -eu
+
+. conf/$HOSTNAME.env
+
+CONTAINER_NAME=stomrin-web
+CONTAINER_IMAGE=j0057.azurecr.io/stomrin-web
+CONTAINER_ARGS=(--net web
+                --ip $STOMRIN_WEB_IP
+                --dns $DNS_SERVER
+                --dns-search web.$DNS_SEARCH
+                --subuidname stomrin
+                --subgidname stomrin
+                --env STOMRIN_DIR=/var/lib/stomrin
+                --volume /srv/stomrin:/var/lib/stomrin)
+
+cmd_init() {
+    : install -o 115100 -g 115101 -m 700 -d /srv/stomrin
+}
+
+cmd_build() {
+    pushd ../stomrin/web &>/dev/null
+    : buildah bud -t $CONTAINER_IMAGE:$TAG
+    : buildah push $CONTAINER_IMAGE:$TAG
+    popd &>/dev/null
+}
+
+. functions.sh
