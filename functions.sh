@@ -16,9 +16,11 @@ _latest() {
 
 TAG=$(date '+%y%m%d%H%M')
 
+PODMAN_ARGS="${PODMAN_ARGS:-}"
+
 case "$cmd" in
     run)
-        : podman container run \
+        : podman $PODMAN_ARGS container run \
             --name $CONTAINER_NAME \
             --rm --interactive --tty \
             ${CONTAINER_ARGS[@]} \
@@ -26,7 +28,7 @@ case "$cmd" in
         ;;
 
     create)
-        : podman container create \
+        : podman $PODMAN_ARGS container create \
             --name $CONTAINER_NAME \
             --conmon-pidfile /run/podman/$CONTAINER_NAME.pid --log-driver journald --log-opt 'tag={{.ImageName}}' \
             ${CONTAINER_ARGS[@]} \
@@ -34,7 +36,7 @@ case "$cmd" in
         ;;
 
     destroy)
-        : podman container rm $CONTAINER_NAME
+        : podman $PODMAN_ARGS container rm $CONTAINER_NAME
         ;;
 
     recreate)
