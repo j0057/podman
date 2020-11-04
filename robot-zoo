@@ -1,0 +1,31 @@
+#!/bin/bash -eu
+
+. conf/$HOSTNAME.env
+
+CONTAINER_NAME=robot-zoo
+CONTAINER_IMAGE=j0057.azurecr.io/robot-zoo
+CONTAINER_ARGS=(--net web
+                --ip $ROBOT_ZOO_IP
+                --dns $DNS_SERVER
+                --dns-search web.$DNS_SEARCH
+                --subuidname robot-zoo
+                --subgidname robot-zoo
+                --env ROBOT_ZOO_CONFIG_DIR=/app/cfg
+                --env ROBOT_ZOO_STATE_DIR=/app/state
+                --volume /srv/robot-zoo-config:/app/cfg:ro
+                --volume /srv/robot-zoo-state:/app/state)
+
+cmd_init() {
+    : install -o 117999 -g 117999 -d /srv/robot-zoo-config
+    : install -o 117999 -g 117999 -d /srv/robot-zoo-state
+}
+
+cmd_build() {
+    pushd ../robot_zoo >/dev/null
+    : ./setup.py bdist_wheel -d ~/.cache/python
+    : podman build -v ~/.cache/python:/var/lib/python --build-arg ROBOT_ZOO_VERSION=$(./setup.py --version) -t $CONTAINER_IMAGE:$TAG-$(git describe) .
+    : podman push $CONTAINER_IMAGE:$TAG-$(git describe)
+    popd >/dev/null
+}
+
+. functions.sh
