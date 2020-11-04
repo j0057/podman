@@ -16,7 +16,7 @@ _latest() {
 
 TAG=$(date '+%y%m%d%H%M')
 
-case $1 in
+case "$cmd" in
     run)
         : podman container run \
             --name $CONTAINER_NAME \
@@ -47,10 +47,10 @@ case $1 in
         ;;
 
     *)
-        if [ "$(type -t cmd_$1)" = "function" ]; then
+        if [ "$(type -t "cmd_$cmd")" = "function" ]; then
             cmd_$1
         else
-            echo "error: unknown command $1" >&2
+            echo "error: unknown command '$cmd'" >&2
             exit 1
         fi
 esac
