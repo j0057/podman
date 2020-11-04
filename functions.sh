@@ -18,6 +18,7 @@ TAG=$(date '+%y%m%d%H%M')
 
 PODMAN_ARGS="${PODMAN_ARGS:-}"
 
+cmd="${1:-}"
 case "$cmd" in
     run)
         : podman $PODMAN_ARGS container run \
