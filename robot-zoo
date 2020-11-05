@@ -17,8 +17,8 @@ CONTAINER_ARGS=(--net web
 
 cmd_init() {
     subuid=$(awk '$1=="robot-zoo" {print $2}' FS=: /etc/subuid)
-    : install -o $[subuid+999] -g $[subuid+999] -d /srv/robot-zoo-config
-    : install -o $[subuid+999] -g $[subuid+999] -d /srv/robot-zoo-state
+    : install -o $[subuid+999] -g $[subuid+999] -m 700 -d /srv/robot-zoo-config
+    : install -o $[subuid+999] -g $[subuid+999] -m 700 -d /srv/robot-zoo-state
 }
 
 cmd_build() {
