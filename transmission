@@ -7,9 +7,7 @@ CONTAINER_IMAGE=localhost/transmission
 CONTAINER_ARGS=(--net vpn
                 --ip $TRANSMISSION_IP
                 --dns $DNS_SERVER
-                --dns-search vpn.$DNS_SEARCH
-                --subuidname transmission
-                --subgidname transmission)
+                --dns-search vpn.$DNS_SEARCH)
 
 cmd_build() {
     ctr=$(: buildah from alpine:3.12)

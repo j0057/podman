@@ -12,6 +12,10 @@ if [ -z "${2:-}" ]; then
                     --subgidname wireguard
                     --cap-add NET_ADMIN)
 else
+    # XXX this breaks if functions.sh always adds --uidmap/--gidmap
+    # XXX ...too much magic?
+    # XXX ...so... define uidmap/subuid functions that work off $CONTAINER_NAME/$CONTAINER_SUBUID_NAME?
+    # XXX ...those won't exist until functions.sh has been sourced...
     CONTAINER_NAME=$2-wg
     CONTAINER_ARGS=(--net container:$2
                     --userns container:$2

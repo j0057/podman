@@ -14,7 +14,14 @@ _latest() {
     esac
 }
 
+CONTAINER_SUBUIDNAME="${CONTAINER_SUBUIDNAME:-$CONTAINER_NAME}"
+
 TAG=$(date '+%y%m%d%H%M')
+
+UIDMAP="$(awk '$1==CN { print "0:" $2 ":" $3}' FS=':' CN="$CONTAINER_SUBUIDNAME" conf/subuid)"
+GIDMAP="$UIDMAP"
+SUBUID="$(awk '$1==CN { print $2 }' FS=':' CN="$CONTAINER_NAME" conf/subuid)"
+SUBGID="$SUBUID"
 
 PODMAN_ARGS="${PODMAN_ARGS:-}"
 
@@ -24,6 +31,8 @@ case "$cmd" in
         : podman $PODMAN_ARGS container run \
             --name $CONTAINER_NAME \
             --rm --interactive --tty \
+            --uidmap $UIDMAP \
+            --gidmap $GIDMAP \
             ${CONTAINER_ARGS[@]} \
             $(_latest)
         ;;
@@ -32,6 +41,8 @@ case "$cmd" in
         : podman $PODMAN_ARGS container create \
             --name $CONTAINER_NAME \
             --conmon-pidfile /run/podman/$CONTAINER_NAME.pid --log-driver journald --log-opt 'tag={{.ImageName}}' \
+            --uidmap $UIDMAP \
+            --gidmap $GIDMAP \
             ${CONTAINER_ARGS[@]} \
             $(_latest)
         ;;

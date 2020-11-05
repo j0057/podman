@@ -9,8 +9,6 @@ CONTAINER_ARGS=(--net sys
 		--ip $NAMED_PODMAN_IP
 		--dns $DNS_SERVER
 		--dns-search sys.$DNS_SEARCH
-		--subuidname named-ddns
-		--subgidname named-ddns
 		--volume /srv/named-ddns-key:/srv/named-ddns-key)
 
 gen_named_conf() {
@@ -77,9 +75,8 @@ cmd_build() {
 }
 
 cmd_init() {
-	subuid=$(awk '$1=="named-ddns"{print $2}' FS=: /etc/subuid)
 	: install -o root -g root -m 700 -d /srv/named-ddns-key
-	: setfacl -m u:$[subuid+100]:rx,d:$[subuid+100]:r /srv/named-ddns-key
+	: setfacl -m u:$[SUBUID+100]:rx,d:$[SUBUID+100]:r /srv/named-ddns-key
 	(umask 0077; : tsig-keygen -a hmac-sha256 podman-ddns > /srv/named-ddns-key/podman-ddns.key)
 }
 

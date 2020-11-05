@@ -8,16 +8,14 @@ CONTAINER_ARGS=(--net web
                 --ip $ROBOT_ZOO_IP
                 --dns $DNS_SERVER
                 --dns-search web.$DNS_SEARCH
-                --subuidname robot-zoo
-                --subgidname robot-zoo
                 --env ROBOT_ZOO_CONFIG_DIR=/app/cfg
                 --env ROBOT_ZOO_STATE_DIR=/app/state
                 --volume /srv/robot-zoo-config:/app/cfg:ro
                 --volume /srv/robot-zoo-state:/app/state)
 
 cmd_init() {
-    : install -o 117999 -g 117999 -d /srv/robot-zoo-config
-    : install -o 117999 -g 117999 -d /srv/robot-zoo-state
+    : install -o $[SUBUID+999] -g $[SUBGID+999] -d /srv/robot-zoo-config
+    : install -o $[SUBUID+999] -g $[SUBGID+999] -d /srv/robot-zoo-state
 }
 
 cmd_build() {

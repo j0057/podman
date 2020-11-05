@@ -7,9 +7,7 @@ CONTAINER_IMAGE=j0057.azurecr.io/openldap
 CONTAINER_ARGS=(--net sys
                 --ip $OPENLDAP_IP
                 --dns $DNS_SERVER
-                --dns-search sys.$DNS_SEARCH
-                --subuidname openldap
-                --subgidname openldap)
+                --dns-search sys.$DNS_SEARCH)
 
 cmd_build() {
     ctr=$(: buildah from j0057.azurecr.io/alpine:3.12)

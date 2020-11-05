@@ -9,8 +9,6 @@ CONTAINER_ARGS=(--net mgmt \
                 --dns $DNS_SERVER \
                 --dns-search mgmt.$DNS_SEARCH \
                 --ip $UNIFI_IP \
-                --subuidname unifi \
-                --subgidname unifi \
                 --volume /srv/unifi:/config \
                 --env PUID=999 \
                 --env PGID=999)
@@ -20,8 +18,7 @@ cmd_pull() {
 }
 
 cmd_init() {
-        subuid=$(awk '$1=="unifi"{print $2}' FS=: /etc/subuid)
-        : install -o $[subuid+999] -g $[subuid+999] -m 700 -d /srv/unifi
+        : install -o $[SUBUID+999] -g $[SUBUID+999] -m 700 -d /srv/unifi
 }
 
 . $(dirname $0)/functions.sh

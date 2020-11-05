@@ -10,8 +10,6 @@ CONTAINER_ARGS=(--net sys
                 --dns $DNS_SERVER
                 --dns-search sys.$DNS_SEARCH
                 --name elastic
-                --subuidname elastic
-                --subgidname elastic
                 --env discovery.type=single-node)
 
 cmd_pull() {
