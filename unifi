@@ -3,7 +3,8 @@
 . conf/$HOSTNAME.env
 
 CONTAINER_NAME=unifi
-CONTAINER_IMAGE=docker.io/linuxserver/unifi-controller
+CONTAINER_IMAGE=j0057.azurecr.io/linuxserver/unifi-controller
+CONTAINER_TAG=6.0.28-ls83
 CONTAINER_ARGS=(--net mgmt \
                 --dns $DNS_SERVER \
                 --dns-search mgmt.$DNS_SEARCH \
@@ -15,7 +16,7 @@ CONTAINER_ARGS=(--net mgmt \
                 --env PGID=999)
 
 cmd_pull() {
-        : podman pull docker://docker.io/linuxserver/unifi-controller:5.12.66-ls56
+        : skopeo copy docker://docker.io/linuxserver/unifi-controller:$CONTAINER_TAG docker://$CONTAINER_IMAGE:$CONTAINER_TAG
 }
 
 cmd_init() {
