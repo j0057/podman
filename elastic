@@ -3,7 +3,8 @@
 . conf/$HOSTNAME.env
 
 CONTAINER_NAME=elastic
-CONTAINER_IMAGE=docker.io/library/elasticsearch
+CONTAINER_IMAGE=j0057.azurecr.io/elasticsearch
+CONTAINER_TAG=7.8.1
 CONTAINER_ARGS=(--net sys
                 --ip $ELASTIC_IP
                 --dns $DNS_SERVER
@@ -13,8 +14,9 @@ CONTAINER_ARGS=(--net sys
                 --subgidname elastic
                 --env discovery.type=single-node)
 
-cmd_build() {
-    : podman pull docker.io/library/elasticsearch:7.8.1
+cmd_pull() {
+    : skopeo copy docker://docker.io/library/elasticsearch:$CONTAINER_TAG docker://$CONTAINER_IMAGE:$CONTAINER_TAG
+
 }
 
 . functions.sh
