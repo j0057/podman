@@ -10,8 +10,8 @@ CONTAINER_ARGS=(--net sys
                 --dns $DNS_SERVER
                 --dns-search sys.$DNS_SEARCH
                 --name kibana
-                --uidmap 0:111000:2000
-                --gidmap 0:111000:2000
+                --subuidname kibana
+                --subgidname kibana
                 --env "SERVER_NAME=kibana.sys.$DNS_SEARCH"
                 --env 'ELASTICSEARCH_HOSTS=["http://elastic:9200/"]')
 
