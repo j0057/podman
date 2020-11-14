@@ -3,7 +3,7 @@
 . conf/$HOSTNAME.env
 
 CONTAINER_NAME=transmission
-CONTAINER_IMAGE=localhost/transmission
+CONTAINER_IMAGE=j0057.azurecr.io/transmission
 CONTAINER_ARGS=(--net vpn
                 --ip $TRANSMISSION_IP
                 --dns $DNS_SERVER
@@ -18,11 +18,11 @@ cmd_build() {
     : buildah run $ctr -- apk add transmission-daemon
     : buildah config \
         --author 'Joost Molenaar <jjm@j0057.nl>' \
-        --entrypoint '/usr/bin/transmission-daemon --foreground --auth --username hoi --password hoi --allowed 172.23.*.*,172.28.*.*' \
+        --cmd "/usr/bin/transmission-daemon --foreground --auth --username hoi --password hoi --allowed 172.23.*.*,172.28.*.* --peerport $TRANSMISSION_PORT" \
         --stop-signal TERM \
         $ctr
 
-    : buildah commit $ctr transmission:$(date +%y%m%d%H%M)
+    : buildah commit $ctr $CONTAINER_IMAGE:$(date +%y%m%d%H%M)
 }
 
 . functions.sh
