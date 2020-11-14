@@ -45,7 +45,7 @@ case "$cmd" in
         $0 create
         ;;
 
-    start|stop|enable|disable|is-enabled|is-active|status)
+    start|stop|restart|enable|disable|is-enabled|is-active|status)
         : systemctl $1 podman@${CONTAINER_NAME}.service
         ;;
 
