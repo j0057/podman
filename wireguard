@@ -10,21 +10,24 @@ if [ -z "${2:-}" ]; then
                     --dns $DNS_SERVER_VPN
                     --subuidname wireguard
                     --subgidname wireguard
+                    --sysctl net.ipv4.conf.all.src_valid_mark=1
                     --cap-add NET_ADMIN)
 else
     CONTAINER_NAME=$2-wg
     CONTAINER_ARGS=(--net container:$2
                     --userns container:$2
+                    --sysctl net.ipv4.conf.all.src_valid_mark=1
                     --cap-add NET_ADMIN)
 fi
 
-CONTAINER_IMAGE=localhost/wireguard
+CONTAINER_IMAGE=j0057.azurecr.io/wireguard
 
 cmd_build() {
-    ctr=$(: buildah from alpine:3.11)
+    ctr=$(: buildah from j0057.azurecr.io/alpine:3.12)
     trap ": buildah rm $ctr" EXIT
 
     : buildah run $ctr -- apk add wireguard-tools iptables ip6tables
+    : buildah run $ctr -- apk add patch
     : buildah run $ctr -- patch /usr/bin/wg-quick <<EOF
 --- /tmp/wg-quick.orig
 +++ /tmp/wg-quick
@@ -39,12 +42,10 @@ EOF
 
     : buildah config \
         --author 'Joost Molenaar <jjm@j0057.nl>' \
-        --cmd '/usr/bin/wg-quick up vpn'
+        --cmd '/usr/bin/wg-quick up vpn' \
         --stop-signal TERM \
         $ctr
-        #--entrypoint '["/usr/bin/wg-quick"]' \
-        #--cmd 'up vpn' \
-    : buildah commit $ctr wireguard:$(date +%y%m%d%H%M)
+    : buildah commit $ctr $CONTAINER_IMAGE:$(date +%y%m%d%H%M)
 }
 
 . functions.sh
