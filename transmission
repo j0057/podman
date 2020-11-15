@@ -8,6 +8,7 @@ CONTAINER_ARGS=(--net vpn
                 --ip $TRANSMISSION_IP
                 --dns $DNS_SERVER
                 --dns-search vpn.$DNS_SEARCH
+                "${TRANSMISSION_VOLUMES[@]}"
                 --subuidname transmission
                 --subgidname transmission)
 
