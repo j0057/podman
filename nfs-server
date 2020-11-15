@@ -1,0 +1,30 @@
+#!/bin/bash -eu
+
+# based on https://github.com/ehough/docker-nfs-server -- even though the bash code is a little weird
+
+. conf/$HOSTNAME.env
+
+CONTAINER_NAME=nfs-server
+CONTAINER_IMAGE=j0057.azurecr.io/nfs-server
+CONTAINER_ARGS=(--net vpn
+                --ip $NFS_SERVER_IP
+                --dns $DNS_SERVER
+                --dns-search vpn.$DNS_SEARCH
+                "${NFS_VOLUMES[@]}"
+                "${NFS_EXPORTS[@]}"
+                --env NFS_LOG_LEVEL=DEBUG
+                --env NFS_DISABLE_VERSION_3=1
+                --cap-add SYS_ADMIN)
+
+# can't mount rpc_pipefs when ran as userns :-(
+#--subuidname nfs-server
+#--subgidname nfs-server
+
+cmd_build() {
+    pushd ../docker-nfs-server &>/dev/null
+    : podman build --build-arg BUILD_FROM=j0057.azurecr.io/alpine:3.12 -t $CONTAINER_IMAGE:$TAG .
+    : podman push $CONTAINER_IMAGE:$TAG
+    popd &>/dev/null
+}
+
+. functions.sh
