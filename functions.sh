@@ -24,7 +24,7 @@ case "$cmd" in
         : podman $PODMAN_ARGS container run \
             --name $CONTAINER_NAME \
             --rm --interactive --tty \
-            ${CONTAINER_ARGS[@]} \
+            "${CONTAINER_ARGS[@]}" \
             $(_latest)
         ;;
 
@@ -32,7 +32,7 @@ case "$cmd" in
         : podman $PODMAN_ARGS container create \
             --name $CONTAINER_NAME \
             --conmon-pidfile /run/podman/$CONTAINER_NAME.pid --log-driver journald --log-opt 'tag={{.ImageName}}' \
-            ${CONTAINER_ARGS[@]} \
+            "${CONTAINER_ARGS[@]}" \
             $(_latest)
         ;;
 
