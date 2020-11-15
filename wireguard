@@ -38,6 +38,7 @@ cmd_build() {
  	if type -p nft >/dev/null; then
 EOF
 
+    # TODO: this should sit in a volume, not in the image -- also regenerate keys
     : buildah copy $ctr wireguard.d/vpn.conf /etc/wireguard
 
     : buildah config \
