@@ -16,7 +16,6 @@ CONTAINER_ARGS=(--net sys
 
 cmd_pull() {
     : skopeo copy docker://docker.io/library/elasticsearch:$CONTAINER_TAG docker://$CONTAINER_IMAGE:$CONTAINER_TAG
-
 }
 
 . functions.sh
