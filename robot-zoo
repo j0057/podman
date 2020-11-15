@@ -2,6 +2,8 @@
 
 . conf/$HOSTNAME.env
 
+# TODO: pass TZ using --tz argument instead of env var in Dockerfile
+
 CONTAINER_NAME=robot-zoo
 CONTAINER_IMAGE=j0057.azurecr.io/robot-zoo
 CONTAINER_ARGS=(--net web
