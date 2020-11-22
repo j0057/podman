@@ -1,0 +1,30 @@
+#!/bin/bash -eu
+
+. conf/$HOSTNAME.env
+
+PROMETHEUS_VERSION=v2.22.2
+
+CONTAINER_NAME=prometheus
+CONTAINER_IMAGE=j0057.azurecr.io/prometheus
+CONTAINER_ARGS=(--net sys
+                --ip $PROMETHEUS_IP
+                --dns $DNS_SERVER
+                --dns-search sys.$DNS_SEARCH
+                --subuidname prometheus
+                --subgidname prometheus)
+
+cmd_build() {
+    ctr=$(: buildah from j0057.azurecr.io/prometheus-base:$PROMETHEUS_VERSION)
+    trap ": buildah rm $ctr" EXIT
+
+    : buildah copy $ctr prometheus.d/prometheus.yml /etc/prometheus
+
+    : buildah config \
+        --author 'Joost Molenaar <jjm@j0057.nl>' \
+        $ctr
+
+    : buildah commit $ctr $CONTAINER_IMAGE:$TAG-$PROMETHEUS_VERSION
+    : buildah push $CONTAINER_IMAGE:$TAG-$PROMETHEUS_VERSION
+}
+
+. functions.sh
