@@ -23,7 +23,8 @@ cmd_build() {
         --stop-signal TERM \
         $ctr
 
-    : buildah commit $ctr $CONTAINER_IMAGE:$(date +%y%m%d%H%M)
+    : buildah commit $ctr $CONTAINER_IMAGE:$TAG
+    : buildah push $CONTAINER_IMAGE:$TAG
 }
 
 . functions.sh
