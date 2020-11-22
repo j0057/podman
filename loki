@@ -1,0 +1,28 @@
+#!/bin/bash -eu
+
+. conf/$HOSTNAME.env
+
+LOKI_VERSION=2.0.0
+
+CONTAINER_NAME=loki
+CONTAINER_IMAGE=j0057.azurecr.io/loki
+CONTAINER_ARGS=(--net sys
+                --ip $LOKI_IP
+                --dns $DNS_SERVER
+                --dns-search sys.$DNS_SEARCH
+                --subuidname loki
+                --subgidname loki)
+
+cmd_build() {
+    ctr=$(: buildah from docker://docker.io/grafana/loki:$LOKI_VERSION)
+    trap ": buildah rm $ctr" EXIT
+
+    : buildah config \
+        --author 'Joost Molenaar <jjm@j0057.nl>' \
+        $ctr
+
+    : buildah commit $ctr $CONTAINER_IMAGE:$TAG-$LOKI_VERSION
+    : buildah push $CONTAINER_IMAGE:$TAG-$LOKI_VERSION
+}
+
+. functions.sh
