@@ -1,0 +1,28 @@
+#!/bin/bash -eu
+
+. conf/$HOSTNAME.env
+
+GRAFANA_VERSION=7.3.3
+
+CONTAINER_NAME=grafana
+CONTAINER_IMAGE=j0057.azurecr.io/grafana
+CONTAINER_ARGS=(--net sys
+                --ip $GRAFANA_IP
+                --dns $DNS_SERVER
+                --dns-search sys.$DNS_SEARCH
+                --subuidname grafana
+                --subgidname grafana)
+
+cmd_build() {
+    ctr=$(: buildah from j0057.azurecr.io/grafana:$GRAFANA_VERSION)
+    trap ": buildah rm $ctr" EXIT
+
+    : buildah config \
+        --author 'Joost Molenaar <jjm@j0057.nl>' \
+        $ctr
+
+    : buildah commit $ctr $CONTAINER_IMAGE:$TAG-$GRAFANA_VERSION
+    : buildah push $CONTAINER_IMAGE:$TAG-$GRAFANA_VERSION
+}
+
+. functions.sh
