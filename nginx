@@ -16,7 +16,7 @@ cmd_build() {
     trap ": buildah rm $ctr" EXIT
 
     : buildah run $ctr -- apk add nginx
-    : buildah copy $ctr nginx.d/nginx.conf /etc/nginx/nginx.conf;
+    : buildah copy $ctr nginx.d/nginx.conf /etc/nginx/nginx.conf
 
     : buildah config \
         --author 'Joost Molenaar <jjm@j0057.nl>' \
