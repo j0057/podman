@@ -14,7 +14,7 @@ CONTAINER_ARGS=(--net sys
                 --subgidname grafana)
 
 cmd_build() {
-    ctr=$(: buildah from j0057.azurecr.io/grafana:$GRAFANA_VERSION)
+    ctr=$(: buildah from docker://docker.io/grafana/grafana:$GRAFANA_VERSION)
     trap ": buildah rm $ctr" EXIT
 
     : buildah config \
