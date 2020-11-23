@@ -16,6 +16,11 @@ scrape_configs:
       - targets:
           - localhost:9090
 
+  - job_name: grafana
+    static_configs:
+      - targets:
+          - grafana:3000
+
   - job_name: node_exporters
     static_configs:
       - targets:
