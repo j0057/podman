@@ -14,7 +14,7 @@ CONTAINER_ARGS=(--net sys
                 --subgidname prometheus)
 
 cmd_build() {
-    ctr=$(: buildah from j0057.azurecr.io/prometheus-base:$PROMETHEUS_VERSION)
+    ctr=$(: buildah from docker://docker.io/prom/prometheus:$PROMETHEUS_VERSION)
     trap ": buildah rm $ctr" EXIT
 
     : buildah copy $ctr prometheus.d/prometheus.yml /etc/prometheus
