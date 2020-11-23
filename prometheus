@@ -10,8 +10,14 @@ CONTAINER_ARGS=(--net sys
                 --ip $PROMETHEUS_IP
                 --dns $DNS_SERVER
                 --dns-search sys.$DNS_SEARCH
+                --volume /srv/prometheus:/prometheus
                 --subuidname prometheus
                 --subgidname prometheus)
+
+cmd_init() {
+    subuid=$(awk '$1=="prometheus" { print $2 }' FS=: /etc/subuid)
+    : install -v -o $[subuid+65534] -g $[subuid] -m 700 -d /srv/prometheus
+}
 
 cmd_build() {
     ctr=$(: buildah from docker://docker.io/prom/prometheus:$PROMETHEUS_VERSION)
