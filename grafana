@@ -11,6 +11,7 @@ CONTAINER_ARGS=(--net sys
                 --dns $DNS_SERVER
                 --dns-search sys.$DNS_SEARCH
                 --volume /srv/grafana:/var/lib/grafana
+                --env GF_SERVER_DOMAIN=$CONTAINER_NAME.sys.$DNS_SEARCH
                 --subuidname grafana
                 --subgidname grafana)
 
