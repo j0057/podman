@@ -10,8 +10,14 @@ CONTAINER_ARGS=(--net sys
                 --ip $LOKI_IP
                 --dns $DNS_SERVER
                 --dns-search sys.$DNS_SEARCH
+                --volume /srv/loki:/loki
                 --subuidname loki
                 --subgidname loki)
+
+cmd_init() {
+    subuid=$(awk '$1=="loki" { print $2 }' FS=: /etc/subuid)
+    : install -v -o $[subuid+10001] -g $[subuid] -m 700 -d /srv/loki
+}
 
 cmd_build() {
     ctr=$(: buildah from docker://docker.io/grafana/loki:$LOKI_VERSION)
