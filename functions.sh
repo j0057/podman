@@ -49,6 +49,10 @@ case "$cmd" in
         : systemctl $1 podman@${CONTAINER_NAME}.service
         ;;
 
+    shell)
+        : podman $PODMAN_ARGS exec -it $CONTAINER_NAME sh
+        ;;
+
     *)
         if [ "$(type -t "cmd_$cmd")" = "function" ]; then
             cmd_$1
