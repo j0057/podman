@@ -21,10 +21,10 @@ CONTAINER_ARGS=(--net vpn
 #--subgidname nfs-server
 
 cmd_build() {
-    pushd ../docker-nfs-server &>/dev/null
+    pushd ../docker-nfs-server >/dev/null
     : podman build --build-arg BUILD_FROM=j0057.azurecr.io/alpine:3.12 -t $CONTAINER_IMAGE:$TAG .
     : podman push $CONTAINER_IMAGE:$TAG
-    popd &>/dev/null
+    popd >/dev/null
 }
 
 . functions.sh
