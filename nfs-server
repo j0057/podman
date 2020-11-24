@@ -13,7 +13,6 @@ CONTAINER_ARGS=(--net vpn
                 "${NFS_VOLUMES[@]}"
                 "${NFS_EXPORTS[@]}"
                 --env NFS_LOG_LEVEL=DEBUG
-                --env NFS_DISABLE_VERSION_3=1
                 --cap-add SYS_ADMIN)
 
 # can't mount rpc_pipefs when ran as userns :-(
