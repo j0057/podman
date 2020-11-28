@@ -5,10 +5,10 @@
 CONTAINER_NAME=elastic
 CONTAINER_IMAGE=j0057.azurecr.io/elasticsearch
 CONTAINER_TAG=7.8.1
-CONTAINER_ARGS=(--net sys
+CONTAINER_ARGS=(--net ops
                 --ip $ELASTIC_IP
                 --dns $DNS_SERVER
-                --dns-search sys.$DNS_SEARCH
+                --dns-search ops.$DNS_SEARCH
                 --name elastic
                 --subuidname elastic
                 --subgidname elastic

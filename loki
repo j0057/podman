@@ -6,10 +6,10 @@ LOKI_VERSION=2.0.0
 
 CONTAINER_NAME=loki
 CONTAINER_IMAGE=j0057.azurecr.io/loki
-CONTAINER_ARGS=(--net sys
+CONTAINER_ARGS=(--net ops
                 --ip $LOKI_IP
                 --dns $DNS_SERVER
-                --dns-search sys.$DNS_SEARCH
+                --dns-search ops.$DNS_SEARCH
                 --volume /srv/loki:/loki
                 --subuidname loki
                 --subgidname loki)

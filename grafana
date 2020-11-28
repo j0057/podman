@@ -6,12 +6,12 @@ GRAFANA_VERSION=7.3.3
 
 CONTAINER_NAME=grafana
 CONTAINER_IMAGE=j0057.azurecr.io/grafana
-CONTAINER_ARGS=(--net sys
+CONTAINER_ARGS=(--net ops
                 --ip $GRAFANA_IP
                 --dns $DNS_SERVER
-                --dns-search sys.$DNS_SEARCH
+                --dns-search ops.$DNS_SEARCH
                 --volume /srv/grafana:/var/lib/grafana
-                --env GF_SERVER_DOMAIN=$CONTAINER_NAME.sys.$DNS_SEARCH
+                --env GF_SERVER_DOMAIN=$CONTAINER_NAME.ops.$DNS_SEARCH
                 --subuidname grafana
                 --subgidname grafana)
 

@@ -5,14 +5,14 @@
 CONTAINER_NAME=kibana
 CONTAINER_IMAGE=j0057.azurecr.io/kibana
 CONTAINER_TAG=7.8.1
-CONTAINER_ARGS=(--net sys
+CONTAINER_ARGS=(--net ops
                 --ip $KIBANA_IP
                 --dns $DNS_SERVER
-                --dns-search sys.$DNS_SEARCH
+                --dns-search ops.$DNS_SEARCH
                 --name kibana
                 --subuidname kibana
                 --subgidname kibana
-                --env "SERVER_NAME=kibana.sys.$DNS_SEARCH"
+                --env "SERVER_NAME=kibana.ops.$DNS_SEARCH"
                 --env 'ELASTICSEARCH_HOSTS=["http://elastic:9200/"]')
 
 cmd_pull() {

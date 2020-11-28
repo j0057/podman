@@ -6,10 +6,10 @@ PROMETHEUS_VERSION=v2.22.2
 
 CONTAINER_NAME=prometheus
 CONTAINER_IMAGE=j0057.azurecr.io/prometheus
-CONTAINER_ARGS=(--net sys
+CONTAINER_ARGS=(--net ops
                 --ip $PROMETHEUS_IP
                 --dns $DNS_SERVER
-                --dns-search sys.$DNS_SEARCH
+                --dns-search ops.$DNS_SEARCH
                 --volume /srv/prometheus:/prometheus
                 --subuidname prometheus
                 --subgidname prometheus)
