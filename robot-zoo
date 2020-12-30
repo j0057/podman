@@ -25,6 +25,9 @@ cmd_init() {
 
 cmd_build() {
     pushd ../robot_zoo >/dev/null
+    : . .envrc
+    : python -m ensurepip
+    : python -m pip install -I -U pip setuptools wheel setuptools-version-command
     : ./setup.py bdist_wheel -d ~/.cache/python
     : podman build -v ~/.cache/python:/var/lib/python --build-arg ROBOT_ZOO_VERSION=$(./setup.py --version) -t $CONTAINER_IMAGE:$TAG-$(git describe) .
     : podman push $CONTAINER_IMAGE:$TAG-$(git describe)
