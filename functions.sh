@@ -41,8 +41,14 @@ case "$cmd" in
         ;;
 
     recreate)
+        if $0 is-enabled &>/dev/null; then
+            $0 stop
+        fi
         $0 destroy || true
         $0 create
+        if $0 is-enabled &> /dev/null; then
+            $0 start
+        fi
         ;;
 
     start|stop|restart|enable|disable|is-enabled|is-active|status)
