@@ -31,7 +31,7 @@ cmd_build() {
     : buildah run $ctr -- patch /usr/bin/wg-quick <<EOF
 --- /tmp/wg-quick.orig
 +++ /tmp/wg-quick
-@@ -234,3 +234,3 @@
+@@ -239,3 +239,3 @@
  	printf -v nftcmd '%sadd rule %s %s premangle meta l4proto udp meta mark set ct mark \\n' "\$nftcmd" "\$pf" "\$nftable"
 -	[[ \$proto == -4 ]] && cmd sysctl -q net.ipv4.conf.all.src_valid_mark=1
 +	[[ \$proto == -4 ]] && [[ \$(sysctl -n net.ipv4.conf.all.src_valid_mark) != 1 ]] && cmd sysctl -q net.ipv4.conf.all.src_valid_mark=1
