@@ -11,13 +11,13 @@ if [ -z "${2:-}" ]; then
                     --subuidname wireguard
                     --subgidname wireguard
                     --sysctl net.ipv4.conf.all.src_valid_mark=1
-                    --cap-add NET_ADMIN)
+                    --cap-add NET_ADMIN,NET_RAW)
 else
     CONTAINER_NAME=$2-wg
     CONTAINER_ARGS=(--net container:$2
                     --userns container:$2
                     --sysctl net.ipv4.conf.all.src_valid_mark=1
-                    --cap-add NET_ADMIN)
+                    --cap-add NET_ADMIN,NET_RAW)
 fi
 
 CONTAINER_IMAGE=j0057.azurecr.io/wireguard
