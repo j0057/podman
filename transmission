@@ -20,7 +20,7 @@ cmd_build() {
     : buildah copy $ctr wireguard.d/wait-vpn /bin/wait-vpn
     : buildah config \
         --author 'Joost Molenaar <jjm@j0057.nl>' \
-        --cmd "/bin/wait-vpn /usr/bin/transmission-daemon --foreground --auth --username hoi --password hoi --allowed 172.23.*.*,172.28.*.* --peerport $TRANSMISSION_PORT" \
+        --cmd "/bin/wait-vpn /usr/bin/transmission-daemon --foreground --auth --username hoi --password hoi --allowed 192.168.178.*,172.23.*.*,172.28.*.* --peerport $TRANSMISSION_PORT" \
         --stop-signal TERM \
         $ctr
 
