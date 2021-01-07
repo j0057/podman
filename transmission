@@ -17,9 +17,10 @@ cmd_build() {
     trap ": buildah rm $ctr" EXIT
 
     : buildah run $ctr -- apk add transmission-daemon
+    : buildah copy $ctr wireguard.d/wait-vpn /bin/wait-vpn
     : buildah config \
         --author 'Joost Molenaar <jjm@j0057.nl>' \
-        --cmd "/usr/bin/transmission-daemon --foreground --auth --username hoi --password hoi --allowed 172.23.*.*,172.28.*.* --peerport $TRANSMISSION_PORT" \
+        --cmd "/bin/wait-vpn /usr/bin/transmission-daemon --foreground --auth --username hoi --password hoi --allowed 172.23.*.*,172.28.*.* --peerport $TRANSMISSION_PORT" \
         --stop-signal TERM \
         $ctr
 
