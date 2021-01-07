@@ -1,0 +1,15 @@
+[Unit]
+Description=Podman container %i
+
+[Service]
+Type=forking
+PIDFile=/run/podman/%i.pid
+Restart=on-failure
+KillMode=control-group
+TimeoutStopSec=60
+
+ExecStart=podman container start %i
+ExecStop=podman container stop %i
+
+[Install]
+WantedBy=multi-user.target
