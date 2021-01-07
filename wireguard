@@ -12,12 +12,14 @@ if [ -z "${2:-}" ]; then
                     --subgidname wireguard
                     --sysctl net.ipv4.conf.all.src_valid_mark=1
                     --cap-add NET_ADMIN,NET_RAW)
+    SUBUID_NAME=$CONTAINER_NAME
 else
     CONTAINER_NAME=$2-wg
     CONTAINER_ARGS=(--net container:$2
                     --userns container:$2
                     --sysctl net.ipv4.conf.all.src_valid_mark=1
                     --cap-add NET_ADMIN,NET_RAW)
+    SUBUID_NAME=$2
 fi
 
 CONTAINER_IMAGE=j0057.azurecr.io/wireguard
@@ -47,6 +49,12 @@ EOF
         --stop-signal TERM \
         $ctr
     : buildah commit $ctr $CONTAINER_IMAGE:$(date +%y%m%d%H%M)
+}
+
+cmd_init() {
+    subuid=$(awk '$1==SN{print $2}' FS=: SN=$SUBUID_NAME /etc/subuid)
+    : install -o $subuid -g $subuid -m 500 -d /srv/$CONTAINER_NAME
+    : install -o $subuid -g $subuid -m 400 wireguard.d/vpn.conf /srv/$CONTAINER_NAME
 }
 
 . functions.sh
