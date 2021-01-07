@@ -11,6 +11,7 @@ if [ -z "${2:-}" ]; then
                     --subuidname wireguard
                     --subgidname wireguard
                     --sysctl net.ipv4.conf.all.src_valid_mark=1
+                    --volume /srv/$CONTAINER_NAME:/etc/wireguard
                     --cap-add NET_ADMIN,NET_RAW)
     SUBUID_NAME=$CONTAINER_NAME
 else
@@ -18,6 +19,7 @@ else
     CONTAINER_ARGS=(--net container:$2
                     --userns container:$2
                     --sysctl net.ipv4.conf.all.src_valid_mark=1
+                    --volume /srv/$CONTAINER_NAME:/etc/wireguard
                     --cap-add NET_ADMIN,NET_RAW)
     SUBUID_NAME=$2
 fi
@@ -39,9 +41,6 @@ cmd_build() {
 +	[[ \$proto == -4 ]] && [[ \$(sysctl -n net.ipv4.conf.all.src_valid_mark) != 1 ]] && cmd sysctl -q net.ipv4.conf.all.src_valid_mark=1
  	if type -p nft >/dev/null; then
 EOF
-
-    # TODO: this should sit in a volume, not in the image -- also regenerate keys
-    : buildah copy $ctr wireguard.d/vpn.conf /etc/wireguard
 
     : buildah config \
         --author 'Joost Molenaar <jjm@j0057.nl>' \
