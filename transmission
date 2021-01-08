@@ -11,6 +11,7 @@ CONTAINER_ARGS=(--net vpn
                 --cap-add CAP_NET_RAW
                 --user transmission:transmission
                 "${TRANSMISSION_VOLUMES[@]}"
+                --volume /srv/transmission:/var/lib/transmission
                 --subuidname transmission
                 --subgidname transmission)
 
@@ -28,6 +29,11 @@ cmd_build() {
 
     : buildah commit $ctr $CONTAINER_IMAGE:$TAG
     : buildah push $CONTAINER_IMAGE:$TAG
+}
+
+cmd_init() {
+    subuid=$(awk '$1=="transmission" { print $2 }' FS=: /etc/subuid)
+    : install -o $[subuid+100] -g $[subuid+100] -d /srv/transmission
 }
 
 . functions.sh
