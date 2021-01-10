@@ -1,0 +1,28 @@
+#!/bin/bash
+
+if [ $(id -u) != 0 ]; then
+    echo "error: going to need root for this" >&2
+    exit 1
+fi
+
+exec 4<&0
+
+confirm() {
+    echo -n "[?] $1 [y/n] "
+    read answer <&4
+    [ "$answer" = y ]
+}
+
+find etc -type f | sort | while read fn; do
+    echo -e "\e[1;36m[+] /$fn\e[0m"
+    if [ ! -f "/$fn" ]; then
+        if confirm "/$fn: deploy new file?"; then
+            cp -v "$fn" "/$fn"
+        fi
+    elif ! diff "/$fn" "$fn" &>/dev/null; then
+        diff --color=always -u "/$fn" "$fn"
+        if confirm "/$fn: deploy updated file?"; then
+            cp -v "$fn" "/$fn"
+        fi
+    fi
+done
