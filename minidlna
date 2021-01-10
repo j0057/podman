@@ -1,0 +1,54 @@
+#!/bin/bash -eu
+
+# on host:
+#   - mrouted
+#   - iptables -t mangle -A PREROUTING -d 224.0.0.0/4 -j TTL --ttl-inc 1
+
+. conf/$HOSTNAME.env
+
+INSTANCE_NAME="${2:?missing instance name (one of: ${!MINIDLNA_INSTANCE[@]})}"
+
+CONTAINER_NAME=minidlna_$INSTANCE_NAME
+CONTAINER_IMAGE=j0057.azurecr.io/minidlna
+CONTAINER_ARGS=(--net dlna
+                --dns $DNS_SERVER
+                --dns-search dlna.$DNS_SEARCH
+                --hostname $CONTAINER_NAME
+                --volume /srv/minidlna_$INSTANCE_NAME:/var/lib/minidlna
+                --volume ${MINIDLNA_INSTANCE[$INSTANCE_NAME]}:/srv:ro
+                --subuidname minidlna
+                --subgidname minidlna)
+
+cmd_build() {
+    ctr=$(: buildah from alpine:3.12)
+    trap ": buildah rm $ctr" EXIT
+
+    : buildah run $ctr -- apk add --no-cache minidlna socat
+
+    : buildah run $ctr -- \
+        sed -e '/^#root_container=/     s|.*|root_container=M|' \
+            -e '/^#log_level=/          s|.*|log_level=general,artwork,database,inotify,scanner,metadata,http,ssdp,tivo=info|' \
+            -e '/^#log_dir=/            s|.*|log_dir=/var/log/minidlna|' \
+            -e '/^#user=/               s|.*|user=minidlna|' \
+            -e '/^notify_interval=/     s|.*|notify_interval=60|' \
+            -e '/^media_dir=/           s|.*|media_dir=/srv|' \
+            -i /etc/minidlna.conf
+
+    : buildah config \
+        --author 'Joost Molenaar <jjm@j0057.nl>' \
+        --port tcp/8200 \
+        --port udp/9100 \
+        --stop-signal TERM \
+        --cmd "/bin/sh -c 'trap \"killall -q socat minidlnad\" SIGTERM; socat pipe:/var/log/minidlna/minidlna.log stdout & minidlnad & wait'" \
+        $ctr
+
+    : buildah commit $ctr $CONTAINER_IMAGE:$TAG
+    : buildah push $CONTAINER_IMAGE:$TAG
+}
+
+cmd_init() {
+    subuid=$(awk '$1=="minidlna" { print $2 }' FS=: /etc/subuid)
+    : install -o $[subuid+100] -g $[subuid+100] -d /srv/minidlna_$INSTANCE_NAME
+}
+
+. functions.sh
