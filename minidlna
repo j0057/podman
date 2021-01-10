@@ -15,7 +15,7 @@ CONTAINER_ARGS=(--net dlna
                 --dns-search dlna.$DNS_SEARCH
                 --hostname $CONTAINER_NAME
                 --volume /srv/minidlna_$INSTANCE_NAME:/var/lib/minidlna
-                --volume ${MINIDLNA_INSTANCE[$INSTANCE_NAME]}:/srv:ro
+                --volume "${MINIDLNA_INSTANCE[$INSTANCE_NAME]}":/srv:ro
                 --subuidname minidlna
                 --subgidname minidlna)
 
