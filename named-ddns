@@ -54,7 +54,7 @@ gen_zone() {
 }
 
 cmd_build() {
-	ctr=$(: buildah from j0057.azurecr.io/alpine:3.12)
+	ctr=$(: buildah from alpine:3.13.0)
 	trap ": buildah rm $ctr" EXIT
 
 	: buildah run $ctr -- apk add bind
