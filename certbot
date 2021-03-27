@@ -4,7 +4,7 @@
 
 case $1 in
     build)
-        ctr=$(: buildah from alpine:3.13.2)
+        ctr=$(: buildah from alpine:3.13.3)
 
         : buildah run $ctr -- apk add certbot openssl ca-certificates
         : buildah copy $ctr certbot.d/entrypoint /bin

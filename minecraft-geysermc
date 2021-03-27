@@ -19,7 +19,7 @@ CONTAINER_ARGS=(--net sys
                 --subgidname minecraft-geysermc)
 
 cmd_build() {
-    ctr=$(: buildah from alpine:3.13.2)
+    ctr=$(: buildah from alpine:3.13.3)
     trap ": buildah rm $ctr" EXIT
 
     : buildah run $ctr -- apk add openjdk11-jre-headless
