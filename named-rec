@@ -12,7 +12,7 @@ CONTAINER_ARGS=(--net sys
                 --subgidname named-rec)
 
 cmd_build() {
-    ctr=$(: buildah from alpine:3.13.0)
+    ctr=$(: buildah from alpine:3.13.2)
     trap ": buildah rm $ctr" EXIT
     : buildah run $ctr -- apk add bind
     : buildah copy $ctr named.d/named-rec.conf /etc/bind/named.conf

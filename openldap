@@ -12,7 +12,7 @@ CONTAINER_ARGS=(--net sys
                 --subgidname openldap)
 
 cmd_build() {
-    ctr=$(: buildah from alpine:3.13.0)
+    ctr=$(: buildah from alpine:3.13.2)
     trap ": buildah rm $ctr" EXIT
 
     : buildah run $ctr -- apk add socat openldap openldap-clients openldap-back-mdb
