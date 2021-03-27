@@ -1,0 +1,38 @@
+#!/bin/bash -eu
+
+GEYSERMC_BUILD=638
+GEYSERMC_MD5=97cd5d912ae32395279a6cac897869ee
+# --> https://ci.opencollab.dev/job/GeyserMC/job/Geyser/job/master/
+# --> https://ci.opencollab.dev/job/GeyserMC/job/Geyser/job/master/changes
+GEYSERMC_URL=https://ci.opencollab.dev/job/GeyserMC/job/Geyser/job/master/$GEYSERMC_BUILD/artifact/bootstrap/standalone/target/Geyser.jar
+
+. conf/$HOSTNAME.env
+
+CONTAINER_NAME=minecraft-geysermc
+CONTAINER_IMAGE=j0057.azurecr.io/geysermc
+CONTAINER_ARGS=(--net sys
+                --ip $GEYSERMC_IP
+                --dns $DNS_SERVER
+                --dns-search sys.$DNS_SEARCH
+                --env MINECRAFT_IP=$MINECRAFT_IP
+                --subuidname minecraft-geysermc
+                --subgidname minecraft-geysermc)
+
+cmd_build() {
+    ctr=$(: buildah from alpine:3.13.2)
+    trap ": buildah rm $ctr" EXIT
+
+    : buildah run $ctr -- apk add openjdk11-jre-headless
+    : buildah copy $ctr $GEYSERMC_URL /opt
+
+    : buildah config \
+        --author 'Joost Molenaar <jjm@j0057.nl>' \
+        --workingdir '/srv' \
+        --cmd "/bin/sh -c '/usr/bin/java -jar /opt/Geyser.jar --nogui --remote.address=\$MINECRAFT_IP'" \
+        $ctr
+
+    : buildah commit $ctr $CONTAINER_IMAGE:$TAG-$GEYSERMC_BUILD
+    : buildah push $CONTAINER_IMAGE:$TAG-$GEYSERMC_BUILD
+}
+
+. functions.sh
