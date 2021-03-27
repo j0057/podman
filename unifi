@@ -4,7 +4,7 @@
 
 CONTAINER_NAME=unifi
 CONTAINER_IMAGE=j0057.azurecr.io/linuxserver/unifi-controller
-CONTAINER_TAG=6.0.28-ls83
+CONTAINER_TAG='6.0.45-ls100'
 CONTAINER_ARGS=(--net mgmt \
                 --dns $DNS_SERVER \
                 --dns-search mgmt.$DNS_SEARCH \
