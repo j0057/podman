@@ -16,6 +16,7 @@ CONTAINER_ARGS=(--net dlna
                 --hostname $CONTAINER_NAME
                 --volume /srv/minidlna_$INSTANCE_NAME:/var/lib/minidlna
                 --volume "${MINIDLNA_INSTANCE[$INSTANCE_NAME]}":/srv:ro
+                --tmpfs /run
                 --subuidname minidlna
                 --subgidname minidlna)
 
